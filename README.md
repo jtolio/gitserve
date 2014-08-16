@@ -1,7 +1,8 @@
 gitsubmit
 =========
 
-A fake SSH server and library for supporting full git repository one-way pushes.
+A restricted SSH server and library for supporting controlled Git repository
+access and code submission.
 
 ### A sample interaction
 
@@ -50,11 +51,17 @@ To ssh://localhost:7022/myrepo
 ~/myrepo$
 ```
 
-Make sure to check out `submission-trigger.py` to see how to customize `gitsubmit` for your own ends!
+Make sure to check out `submission-trigger.py` to see how to customize
+`gitsubmit` for your own ends!
 
 ### Addendum
 
-Currently this library is oriented towards code submissions and is thus one-way. That said, it's surprisingly easy to use the `gitsubmit/ssh` subpackage to provide flexible read/write access control to a Git repo. While `gitsubmit/repo` only implements `git-receive-pack`, adding `git-upload-pack` support is pretty much all you need for your own Gitosis competitor.
+Currently this library is oriented towards code submissions and is thus
+one-way. That said, it's surprisingly easy to use the `gitsubmit/ssh`
+subpackage to provide flexible read/write access control to a Git repo.
+While `gitsubmit/repo` only implements `git-receive-pack`, adding
+`git-upload-pack` support is pretty much all you need for your own Gitosis
+competitor.
 
 #### License
 
