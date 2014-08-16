@@ -13,7 +13,7 @@ import (
 	"sync"
 
 	"code.google.com/p/go.crypto/ssh"
-	gs_ssh "github.com/jtolds/gitsubmit/ssh"
+	gs_ssh "github.com/jtolds/gitserve/ssh"
 	"github.com/spacemonkeygo/monitor"
 	"github.com/spacemonkeygo/spacelog"
 )

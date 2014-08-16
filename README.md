@@ -1,4 +1,4 @@
-gitsubmit
+gitserve
 =========
 
 A restricted SSH server and library for supporting controlled Git repository
@@ -8,10 +8,10 @@ access and code submission.
 
 Start the server:
 ```shell
-~$ go get github.com/jtolds/gitsubmit
-~$ ssh-keygen -N '' -f gitsubmit-key
-~$ gitsubmit --addr :7022 --private_key gitsubmit-key \
-       --subproc $GOPATH/src/github.com/jtolds/gitsubmit/submission-trigger.py
+~$ go get github.com/jtolds/gitserve/cmd/submitd
+~$ ssh-keygen -N '' -f submitd-key
+~$ submitd --addr :7022 --private_key submitd-key \
+       --subproc $GOPATH/src/github.com/jtolds/gitserve/cmd/submitd/submission-trigger.py
 2014/08/16 02:11:07 NOTE - listening on [::]:7022
 ```
 
@@ -19,13 +19,13 @@ Push a git repo:
 ```shell
 ~$ mkdir myrepo && cd myrepo
 ~/myrepo$ git init
-~/myrepo$ git remote add gitsubmit ssh://localhost:7022/myrepo
+~/myrepo$ git remote add submitd ssh://localhost:7022/myrepo
 ~/myrepo$ touch newfile{1,2}
 ~/myrepo$ git add .
 ~/myrepo$ git commit -m 'first commit!'
-~/myrepo$ git push gitsubmit master
-Welcome to the 'gitsubmit' code repo submission tool!
-Please see https://github.com/jtolds/gitsubmit for more info.
+~/myrepo$ git push submitd master
+Welcome to the gitserve submitd code repo submission tool!
+Please see https://github.com/jtolds/gitserve for more info.
 
 Counting objects: 3, done.
 Delta compression using up to 4 threads.
@@ -52,16 +52,7 @@ To ssh://localhost:7022/myrepo
 ```
 
 Make sure to check out `submission-trigger.py` to see how to customize
-`gitsubmit` for your own ends!
-
-### Addendum
-
-Currently this library is oriented towards code submissions and is thus
-one-way. That said, it's surprisingly easy to use the `gitsubmit/ssh`
-subpackage to provide flexible read/write access control to a Git repo.
-While `gitsubmit/repo` only implements `git-receive-pack`, adding
-`git-upload-pack` support is pretty much all you need for your own Gitosis
-competitor.
+submitd for your own ends!
 
 #### License
 
