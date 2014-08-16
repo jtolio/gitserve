@@ -32,6 +32,9 @@ print
 print "You pushed:"
 try:
   worktree = tempfile.mkdtemp()
+  # git ls-tree -r is probably better than doing a checkout and then a find,
+  # but for demonstrative purposes, showing users how to get the working tree
+  # on disk seems useful.
   check_call(["git", "--git-dir", args.repo, "--work-tree", worktree,
               "checkout", "-f"])
   check_call(["find", worktree])
