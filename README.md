@@ -17,7 +17,7 @@ Start the server:
 ~$ go get github.com/jtolds/gitserve/cmd/git-submitd
 ~$ ssh-keygen -N '' -qf git-submitd-key
 ~$ git-submitd --addr :7022 --private_key git-submitd-key \
-       --subproc $GOPATH/src/github.com/jtolds/gitserve/cmd/git-submitd/submission-trigger.py
+       --inspect $GOPATH/src/github.com/jtolds/gitserve/cmd/git-submitd/submission-trigger.py
 2014/08/16 02:11:07 NOTE - listening on [::]:7022
 ```
 

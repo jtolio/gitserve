@@ -34,8 +34,11 @@ var (
 		"storage path for git submissions")
 	keep = flag.Bool("keep", false,
 		"if true, keeps repos after processing, instead of deleting")
-	subproc = flag.String("subproc", "./submission-trigger.py",
+	inspect = flag.String("inspect", "./submission-trigger.py",
 		"the subprocess to run on a git repo submission")
+	auth = flag.String("auth", "",
+		"If set, will be run with incoming SSH keys prior to receiving packs. "+
+			"A successful exit status will let a receive go through")
 	debugAddr = flag.String("debug_addr", "127.0.0.1:0",
 		"address to listen on for debug http endpoints")
 	maxRepoSize = flag.Uint64("max_repo_size", 256*1024*1024,
@@ -48,7 +51,7 @@ var (
 func SubmissionHandler(repo string, output io.Writer, meta ssh.ConnMetadata,
 	key ssh.PublicKey, name string) (exit_status uint32, err error) {
 	defer mon.Task()(&err)
-	cmd := exec.Command(*subproc,
+	cmd := exec.Command(*inspect,
 		"--repo", repo,
 		"--user", meta.User(),
 		"--remote", meta.RemoteAddr().String(),
@@ -61,6 +64,17 @@ func SubmissionHandler(repo string, output io.Writer, meta ssh.ConnMetadata,
 		return 1, err
 	}
 	return 0, nil
+}
+
+func AuthHandler(meta ssh.ConnMetadata, key ssh.PublicKey) (err error) {
+	defer mon.Task()(&err)
+	if *auth == "" {
+		return nil
+	}
+	return exec.Command(*auth,
+		"--user", meta.User(),
+		"--remote", meta.RemoteAddr().String(),
+		"--key", strings.TrimSpace(string(ssh.MarshalAuthorizedKey(key)))).Run()
 }
 
 func main() {
@@ -85,5 +99,6 @@ func main() {
 		StoragePath: *storage,
 		Keep:        *keep,
 		Handler:     SubmissionHandler,
+		Auth:        AuthHandler,
 		MaxRepoSize: int64(*maxRepoSize)}).ListenAndServe("tcp", *addr))
 }
