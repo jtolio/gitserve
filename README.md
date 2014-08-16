@@ -9,7 +9,7 @@ access and code submission.
 Start the server:
 ```shell
 ~$ go get github.com/jtolds/gitserve/cmd/submitd
-~$ ssh-keygen -N '' -f submitd-key
+~$ ssh-keygen -N '' -qf submitd-key
 ~$ submitd --addr :7022 --private_key submitd-key \
        --subproc $GOPATH/src/github.com/jtolds/gitserve/cmd/submitd/submission-trigger.py
 2014/08/16 02:11:07 NOTE - listening on [::]:7022
@@ -19,10 +19,15 @@ Push a git repo:
 ```shell
 ~$ mkdir myrepo && cd myrepo
 ~/myrepo$ git init
+Initialized empty Git repository in /home/jt/myrepo/.git/
 ~/myrepo$ git remote add submitd ssh://localhost:7022/myrepo
 ~/myrepo$ touch newfile{1,2}
 ~/myrepo$ git add .
 ~/myrepo$ git commit -m 'first commit!'
+[master (root-commit) 2266e76] first commit!
+ 0 files changed
+ create mode 100644 newfile1
+ create mode 100644 newfile2
 ~/myrepo$ git push submitd master
 Welcome to the gitserve submitd code repo submission tool!
 Please see https://github.com/jtolds/gitserve for more info.
