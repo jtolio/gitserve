@@ -39,6 +39,7 @@ type RepoSubmissions struct {
 	StoragePath string
 	Keep        bool
 	Handler     SubmissionHandler
+	MaxRepoSize int64
 
 	mtx  sync.Mutex
 	keys map[string]ssh.PublicKey
@@ -51,6 +52,21 @@ func (rs *RepoSubmissions) getKey(session_id []byte) ssh.PublicKey {
 		return nil
 	}
 	return rs.keys[string(session_id)]
+}
+
+type maxReader struct {
+	Reader io.Reader
+	Pos    int64
+	Max    int64
+}
+
+func (m *maxReader) Read(p []byte) (n int, err error) {
+	n, err = m.Reader.Read(p)
+	m.Pos += int64(n)
+	if m.Pos > m.Max {
+		return 0, fmt.Errorf("data exceeded limit %d", m.Max)
+	}
+	return n, err
 }
 
 func (rs *RepoSubmissions) cmdHandler(command string,
@@ -81,7 +97,7 @@ func (rs *RepoSubmissions) cmdHandler(command string,
 	}
 
 	cmd := exec.Command("git-receive-pack", tmpdir)
-	cmd.Stdin = stdin
+	cmd.Stdin = &maxReader{Reader: stdin, Max: rs.MaxRepoSize}
 	cmd.Stdout = stdout
 	cmd.Stderr = stderr
 	err = cmd.Run()

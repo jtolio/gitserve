@@ -38,6 +38,8 @@ var (
 		"the subprocess to run on a git repo submission")
 	debugAddr = flag.String("debug_addr", "127.0.0.1:0",
 		"address to listen on for debug http endpoints")
+	maxRepoSize = flag.Uint64("max_repo_size", 256*1024*1024,
+		"the maximum individual repo size in bytes")
 
 	logger = spacelog.GetLogger()
 	mon    = monitor.GetMonitors()
@@ -82,5 +84,6 @@ func main() {
 		MOTD:        *motd + "\r\n",
 		StoragePath: *storage,
 		Keep:        *keep,
-		Handler:     SubmissionHandler}).ListenAndServe("tcp", *addr))
+		Handler:     SubmissionHandler,
+		MaxRepoSize: int64(*maxRepoSize)}).ListenAndServe("tcp", *addr))
 }
