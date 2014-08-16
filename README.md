@@ -8,10 +8,10 @@ access and code submission.
 
 Start the server:
 ```shell
-~$ go get github.com/jtolds/gitserve/cmd/submitd
-~$ ssh-keygen -N '' -qf submitd-key
-~$ submitd --addr :7022 --private_key submitd-key \
-       --subproc $GOPATH/src/github.com/jtolds/gitserve/cmd/submitd/submission-trigger.py
+~$ go get github.com/jtolds/gitserve/cmd/git-submitd
+~$ ssh-keygen -N '' -qf git-submitd-key
+~$ git-submitd --addr :7022 --private_key git-submitd-key \
+       --subproc $GOPATH/src/github.com/jtolds/gitserve/cmd/git-submitd/submission-trigger.py
 2014/08/16 02:11:07 NOTE - listening on [::]:7022
 ```
 
@@ -20,7 +20,7 @@ Push a git repo:
 ~$ mkdir myrepo && cd myrepo
 ~/myrepo$ git init
 Initialized empty Git repository in /home/jt/myrepo/.git/
-~/myrepo$ git remote add submitd ssh://localhost:7022/myrepo
+~/myrepo$ git remote add git-submitd ssh://localhost:7022/myrepo
 ~/myrepo$ touch newfile{1,2}
 ~/myrepo$ git add .
 ~/myrepo$ git commit -m 'first commit!'
@@ -28,8 +28,8 @@ Initialized empty Git repository in /home/jt/myrepo/.git/
  0 files changed
  create mode 100644 newfile1
  create mode 100644 newfile2
-~/myrepo$ git push submitd master
-Welcome to the gitserve submitd code repo submission tool!
+~/myrepo$ git push git-submitd master
+Welcome to the gitserve git-submitd code repo submission tool!
 Please see https://github.com/jtolds/gitserve for more info.
 
 Counting objects: 3, done.
@@ -57,7 +57,7 @@ To ssh://localhost:7022/myrepo
 ```
 
 Make sure to check out `submission-trigger.py` to see how to customize
-submitd for your own ends!
+git-submitd for your own ends!
 
 #### License
 

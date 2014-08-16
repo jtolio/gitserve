@@ -27,7 +27,7 @@ var (
 		"Sorry, no interactive shell available.",
 		"the message to display to interactive users")
 	motd = flag.String("motd",
-		"Welcome to the gitserve submitd code repo submission tool!\r\n"+
+		"Welcome to the gitserve git-submitd code repo submission tool!\r\n"+
 			"Please see https://github.com/jtolds/gitserve for more info.\r\n",
 		"the motd banner")
 	storage = flag.String("storage_path", "/tmp",
@@ -65,7 +65,7 @@ func SubmissionHandler(repo string, output io.Writer, meta ssh.ConnMetadata,
 
 func main() {
 	flagfile.Load()
-	setup.MustSetup("submitd")
+	setup.MustSetup("git-submitd")
 	monitor.RegisterEnvironment()
 	go http.ListenAndServe(*debugAddr, monitor.DefaultStore)
 
