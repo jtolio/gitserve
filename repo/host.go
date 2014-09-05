@@ -42,14 +42,7 @@ func (rh *RepoHosting) cmdHandler(command string,
 	cmd.Stdin = stdin
 	cmd.Stdout = stdout
 	cmd.Stderr = stderr
-	err = cmd.Run()
-	if err != nil {
-		// TODO: huh, os/exec doesn't actually let me see the exit status?
-		//  exec.ExitError/os.ProcessState seems like they should, but
-		//  cross-platform compatibility i guess?
-		return 1, err
-	}
-	return 0, nil
+	return RunExec(cmd)
 }
 
 func (rh *RepoHosting) publicKeyCallback(

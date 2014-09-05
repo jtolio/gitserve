@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"os/exec"
 
 	"code.google.com/p/go.crypto/ssh"
 	"github.com/spacemonkeygo/monitor"
@@ -44,4 +45,16 @@ func LoadAuthorizedKeys(data []byte) (rv []ssh.PublicKey, err error) {
 		rv = append(rv, key)
 	}
 	return rv, nil
+}
+
+// RunExec will return a 0 exit status if err is nil
+func RunExec(cmd *exec.Cmd) (exit_status uint32, err error) {
+	err = cmd.Run()
+	if err != nil {
+		// TODO: huh, os/exec doesn't actually let me see the exit status?
+		//  exec.ExitError/os.ProcessState seems like they should, but
+		//  cross-platform compatibility i guess?
+		return 1, err
+	}
+	return 0, nil
 }
