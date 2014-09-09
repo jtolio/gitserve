@@ -104,15 +104,16 @@ func (rs *RepoSubmissions) getUserRepo(repo_id string, output io.Writer,
 	if err != nil {
 		return "", err
 	}
-	err = exec.Command(
-		"git", "--git-dir", user_repo, "init", "--bare").Run()
-	if err != nil {
-		os.RemoveAll(user_repo)
-		return "", err
-	}
 
 	if rs.NewRepoHandler != nil {
 		err = rs.NewRepoHandler(user_repo, output, meta, key, repo_name)
+		if err != nil {
+			os.RemoveAll(user_repo)
+			return "", err
+		}
+	} else {
+		err = exec.Command(
+			"git", "--git-dir", user_repo, "init", "--bare").Run()
 		if err != nil {
 			os.RemoveAll(user_repo)
 			return "", err
@@ -137,9 +138,11 @@ func (rs *RepoSubmissions) cmdHandler(command string,
 		return 1, err
 	}
 
+	repo_name := strings.Trim(parts[1], "'")
+
 	repo_id := rs.repoId(key)
 	rs.lockRepo(repo_id)
-	user_repo, err := rs.getUserRepo(repo_id, stderr, meta, key, parts[1])
+	user_repo, err := rs.getUserRepo(repo_id, stderr, meta, key, repo_name)
 	if err != nil {
 		rs.unlockRepo(repo_id)
 		return 1, err
@@ -177,7 +180,7 @@ func (rs *RepoSubmissions) cmdHandler(command string,
 
 	if rs.SubmissionHandler != nil {
 		return rs.SubmissionHandler(user_repo, stderr, meta, key,
-			strings.Trim(parts[1], "'"), tags.NewTags)
+			repo_name, tags.NewTags)
 	}
 	return 0, nil
 }

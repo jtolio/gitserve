@@ -40,7 +40,9 @@ var (
 		"If set, will be run with incoming SSH keys prior to receiving packs. "+
 			"A successful exit status will let a receive go through")
 	newRepo = flag.String("new_repo", "",
-		"If set, will be run whenever a new repo is initiated to fill the repo.")
+		"If set, will be run to initiate a new repo. the --repo argument given "+
+			"will be an empty folder that should be a bare git repo when this "+
+			"command is done.")
 	debugAddr = flag.String("debug_addr", "127.0.0.1:0",
 		"address to listen on for debug http endpoints")
 	maxPushSize = flag.Uint64("max_push_size", 256*1024*1024,
@@ -69,9 +71,6 @@ func SubmissionHandler(repo_path string, output io.Writer,
 func NewRepoHandler(repo_path string, output io.Writer, meta ssh.ConnMetadata,
 	key ssh.PublicKey, name string) (err error) {
 	defer mon.Task()(&err)
-	if *newRepo == "" {
-		return nil
-	}
 	cmd := exec.Command(*newRepo,
 		"--repo", repo_path,
 		"--user", meta.User(),
@@ -109,6 +108,11 @@ func main() {
 		panic(err)
 	}
 
+	var new_repo repo.NewRepoHandler
+	if *newRepo != "" {
+		new_repo = NewRepoHandler
+	}
+
 	panic((&repo.RepoSubmissions{
 		PrivateKey:        private_key,
 		ShellError:        *shellError + "\r\n",
@@ -117,6 +121,6 @@ func main() {
 		Clean:             *clean,
 		SubmissionHandler: SubmissionHandler,
 		AuthHandler:       AuthHandler,
-		NewRepoHandler:    NewRepoHandler,
+		NewRepoHandler:    new_repo,
 		MaxPushSize:       int64(*maxPushSize)}).ListenAndServe("tcp", *addr))
 }
