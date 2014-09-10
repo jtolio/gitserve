@@ -84,8 +84,9 @@ func (rs *RepoSubmissions) unlockRepo(repo_id string) {
 	rs.repo_lock_cv.Broadcast()
 }
 
-func (rs *RepoSubmissions) repoId(key ssh.PublicKey) string {
-	full_keyhash := sha256.Sum256(ssh.MarshalAuthorizedKey(key))
+func (rs *RepoSubmissions) repoId(key ssh.PublicKey, repo_name string) string {
+	full_keyhash := sha256.Sum256([]byte(string(ssh.MarshalAuthorizedKey(key)) +
+		" " + repo_name))
 	return hex.EncodeToString(full_keyhash[:16])
 }
 
@@ -140,7 +141,7 @@ func (rs *RepoSubmissions) cmdHandler(command string,
 
 	repo_name := strings.Trim(parts[1], "'")
 
-	repo_id := rs.repoId(key)
+	repo_id := rs.repoId(key, repo_name)
 	rs.lockRepo(repo_id)
 	user_repo, err := rs.getUserRepo(repo_id, stderr, meta, key, repo_name)
 	if err != nil {
