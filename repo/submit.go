@@ -16,6 +16,7 @@ import (
 
 	"code.google.com/p/go.crypto/ssh"
 	gs_ssh "github.com/jtolds/gitserve/ssh"
+	"github.com/spacemonkeygo/monotime"
 )
 
 type SubmissionHandler func(
@@ -158,13 +159,20 @@ func (rs *RepoSubmissions) cmdHandler(command string,
 	}
 
 	if parts[0] != "git-receive-pack" {
+		logger.Infof("git fetch: %s %s %s", meta.User(), repo_name, user_repo)
+		start_time := monotime.Monotonic()
 		cmd := exec.Command("git-upload-pack", user_repo)
 		cmd.Stdin = stdin
 		cmd.Stdout = stdout
 		cmd.Stderr = stderr
-		return RunExec(cmd)
+		exit_status, err = RunExec(cmd)
+		logger.Noticef("git fetch: %s %s %s [took %s]", meta.User(), repo_name,
+			user_repo, monotime.Monotonic()-start_time)
+		return exit_status, err
 	}
 
+	logger.Infof("git push: %s %s %s", meta.User(), repo_name, user_repo)
+	start_time := monotime.Monotonic()
 	cmd := exec.Command("git-receive-pack", user_repo)
 	tags := &tagger{Reader: &maxReader{Reader: stdin, Max: rs.MaxPushSize}}
 	cmd.Stdin = tags
@@ -172,6 +180,8 @@ func (rs *RepoSubmissions) cmdHandler(command string,
 	cmd.Stderr = stderr
 
 	exit_status, err = RunExec(cmd)
+	logger.Noticef("git push: %s %s %s [took %s]", meta.User(), repo_name,
+		user_repo, monotime.Monotonic()-start_time)
 	if err != nil {
 		if tags.Err != nil {
 			fmt.Fprintf(stderr, "error: %s\n", tags.Err)
@@ -180,8 +190,11 @@ func (rs *RepoSubmissions) cmdHandler(command string,
 	}
 
 	if rs.SubmissionHandler != nil {
-		return rs.SubmissionHandler(user_repo, stderr, meta, key,
+		start_time := monotime.Monotonic()
+		exit_status, err = rs.SubmissionHandler(user_repo, stderr, meta, key,
 			repo_name, tags.NewTags)
+		logger.Infof("processed submission: %s %s %s [took %s]", meta.User(), repo_name, user_repo, monotime.Monotonic()-start_time)
+		return exit_status, err
 	}
 	return 0, nil
 }
