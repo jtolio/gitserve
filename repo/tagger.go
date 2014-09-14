@@ -12,11 +12,14 @@ import (
 	"time"
 )
 
+type Ref string
+type Tag string
+
 type tagger struct {
 	Reader       io.Reader
 	pass_through bool
 	SubmissionId string
-	NewTags      []string
+	NewTags      map[Ref][]Tag
 	Err          error
 }
 
@@ -29,6 +32,9 @@ func (t *tagger) Read(p []byte) (n int, err error) {
 	}
 	if t.SubmissionId == "" {
 		t.SubmissionId = fmt.Sprint(time.Now().UnixNano())
+	}
+	if t.NewTags == nil {
+		t.NewTags = make(map[Ref][]Tag)
 	}
 	var buf bytes.Buffer
 	for {
@@ -93,8 +99,8 @@ func (t *tagger) Read(p []byte) (n int, err error) {
 			return 0, err
 		}
 
-		t.NewTags = append(t.NewTags, fmt.Sprintf(
-			"submissions/%s/%s", t.SubmissionId, fields[2]))
+		t.NewTags[Ref(fields[1])] = append(t.NewTags[Ref(fields[1])],
+			Tag(fmt.Sprintf("submissions/%s/%s", t.SubmissionId, fields[2])))
 	}
 
 	_, err = buf.Write([]byte("0000"))

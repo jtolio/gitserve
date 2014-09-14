@@ -24,7 +24,7 @@ type SubmissionHandler func(
 	output io.Writer,
 	meta ssh.ConnMetadata,
 	key ssh.PublicKey,
-	repo_name string, tags []string) (
+	repo_name string, tags map[Ref][]Tag) (
 	exit_status uint32,
 	err error)
 

@@ -53,16 +53,24 @@ var (
 )
 
 func SubmissionHandler(repo_path string, output io.Writer,
-	meta ssh.ConnMetadata, key ssh.PublicKey, name string, tags []string) (
-	exit_status uint32, err error) {
+	meta ssh.ConnMetadata, key ssh.PublicKey, name string,
+	tags map[repo.Ref][]repo.Tag) (exit_status uint32, err error) {
 	defer mon.Task()(&err)
+
+	var tag_names []string
+	for _, ref_tags := range tags {
+		for _, ref_tag := range ref_tags {
+			tag_names = append(tag_names, string(ref_tag))
+		}
+	}
+
 	cmd := exec.Command(*inspect,
 		"--repo", repo_path,
 		"--user", meta.User(),
 		"--remote", meta.RemoteAddr().String(),
 		"--key", strings.TrimSpace(string(ssh.MarshalAuthorizedKey(key))),
 		"--name", name,
-		"--tags", strings.Join(tags, "\x00"))
+		"--tags", strings.Join(tag_names, "\x00"))
 	cmd.Stdout = output
 	cmd.Stderr = output
 	return repo.RunExec(cmd)
