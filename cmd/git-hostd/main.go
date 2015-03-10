@@ -27,8 +27,10 @@ var (
 		"Welcome to the gitserve git-hostd code hosting tool!\r\n"+
 			"Please see https://github.com/jtolds/gitserve for more info.\r\n",
 		"the motd banner")
-	repoBase = flag.String("repo_base", ".",
-		"the folder to serve git repos out of")
+	repoBase = flag.String("repo_base", "",
+		"If set, the folder to serve git repos out of. Ignored if --repo is set")
+	repoPath = flag.String("repo", "",
+		"If set, the repo to serve. Overrides --repo_base")
 	authorizedKeys = flag.String("authorized_keys", "authorized_keys",
 		"the authorized key file")
 	debugAddr = flag.String("debug_addr", "127.0.0.1:0",
@@ -62,10 +64,16 @@ func main() {
 		panic(err)
 	}
 
+	repo_path := *repoPath
+	if repo_path == "" && *repoBase == "" {
+		repo_path = "."
+	}
+
 	panic((&repo.RepoHosting{
 		PrivateKey:     private_key,
 		ShellError:     *shellError + "\r\n",
 		MOTD:           *motd + "\r\n",
 		RepoBase:       *repoBase,
+		Repo:           repo_path,
 		AuthorizedKeys: auth_keys}).ListenAndServe("tcp", *addr))
 }

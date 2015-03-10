@@ -20,6 +20,7 @@ type RepoHosting struct {
 	ShellError     string
 	MOTD           string
 	RepoBase       string
+	Repo           string // if set, overrides RepoBase + user-supplied repo name
 	AuthorizedKeys []ssh.PublicKey
 }
 
@@ -38,7 +39,13 @@ func (rh *RepoHosting) cmdHandler(command string,
 		_, err = fmt.Fprintf(stderr, "invalid repo: %#v\r\n", repo)
 		return 1, err
 	}
-	cmd := exec.Command(parts[0], filepath.Join(rh.RepoBase, repo))
+	var repo_path string
+	if rh.Repo != "" {
+		repo_path = rh.Repo
+	} else {
+		repo_path = filepath.Join(rh.RepoBase, repo)
+	}
+	cmd := exec.Command(parts[0], repo_path)
 	cmd.Stdin = stdin
 	cmd.Stdout = stdout
 	cmd.Stderr = stderr
