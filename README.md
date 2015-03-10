@@ -24,7 +24,7 @@ Initialized empty Git repository in /home/jt/myrepo/.git/
 [master (root-commit) 2266e76] first commit!
  0 files changed
  create mode 100644 newfile1
-~/myrepo$ git-hostd
+~/myrepo$ git hostd
 2014/08/16 02:11:07 NOTE - listening on [::]:7022
 ```
 
