@@ -8,34 +8,30 @@ This library comes with two tools:
  * `git-submitd`: A service that supports one-way pushes of full repos, along
       with submission hooks for inspecting and accepting those repos.
  * `git-hostd`: A service that hosts a git repo or a folder of git repos to
-      users that have ssh keys in a specific whitelist.
+      users that (optionally) have ssh keys in a specific whitelist.
 
 ### git-hostd sample interaction
 
 Make a repo and start the server:
 ```shell
-~$ mkdir -p server/myrepo && cd server/myrepo
-~/server/myrepo$ git init
-Initialized empty Git repository in /home/jt/server/myrepo/.git/
-~/server/myrepo$ touch newfile1
-~/server/myrepo$ git add .
-~/server/myrepo$ git commit -m 'first commit!'
+~$ go get github.com/jtolds/gitserve/cmd/git-hostd
+~$ mkdir -p myrepo && cd myrepo
+~/myrepo$ git init
+Initialized empty Git repository in /home/jt/myrepo/.git/
+~/myrepo$ touch newfile1
+~/myrepo$ git add .
+~/myrepo$ git commit -m 'first commit!'
 [master (root-commit) 2266e76] first commit!
  0 files changed
  create mode 100644 newfile1
-~/server/myrepo$ cd -
-~$ go get github.com/jtolds/gitserve/cmd/git-hostd
-~$ ssh-keygen -N '' -qf git-hostd-key
-~$ cat ~/.ssh/idrsa.pub > git-hostd-authorized
-~$ git-hostd --addr :7022 --repo server/myrepo --private_key git-hostd-key \
-       --authorized_keys git-hostd-authorized
+~/myrepo$ git-hostd
 2014/08/16 02:11:07 NOTE - listening on [::]:7022
 ```
 
 Clone your repo from somewhere else, make a change, and push:
 ```shell
-~$ git clone ssh://localhost:7022/myrepo
-Cloning into 'myrepo'...
+~$ git clone ssh://localhost:7022/ myrepo2
+Cloning into 'myrepo2'...
 Welcome to the gitserve git-hostd code hosting tool!
 Please see https://github.com/jtolds/gitserve for more info.
 
@@ -43,14 +39,14 @@ remote: Counting objects: 3, done.
 remote: Compressing objects: 100% (2/2), done.
 remote: Total 3 (delta 0), reused 0 (delta 0)
 Receiving objects: 100% (3/3), done.
-~$ cd myrepo
-~/myrepo$ touch newfile2
-~/myrepo$ git add newfile2
-~/myrepo$ git commit -m 'second commit!'
+~$ cd myrepo2
+~/myrepo2$ touch newfile2
+~/myrepo2$ git add newfile2
+~/myrepo2$ git commit -m 'second commit!'
 [master 043fcab] second commit!
  0 files changed
  create mode 100644 newfile2
-~/myrepo$ git push origin HEAD:refs/heads/mybranch
+~/myrepo2$ git push origin HEAD:refs/heads/mybranch
 Welcome to the gitserve git-hostd code hosting tool!
 Please see https://github.com/jtolds/gitserve for more info.
 
@@ -59,9 +55,9 @@ Delta compression using up to 4 threads.
 Compressing objects: 100% (2/2), done.
 Writing objects: 100% (2/2), 230 bytes, done.
 Total 2 (delta 0), reused 0 (delta 0)
-To ssh://localhost:7022/myrepo
+To ssh://localhost:7022/
  * [new branch]      HEAD -> mybranch
-~/myrepo$
+~/myrepo2$
 ```
 
 ### git-submitd sample interaction
