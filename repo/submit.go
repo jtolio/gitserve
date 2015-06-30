@@ -14,9 +14,9 @@ import (
 	"strings"
 	"sync"
 
-	"code.google.com/p/go.crypto/ssh"
 	gs_ssh "github.com/jtolds/gitserve/ssh"
 	"github.com/spacemonkeygo/monotime"
+	"golang.org/x/crypto/ssh"
 )
 
 type SubmissionHandler func(

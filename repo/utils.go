@@ -9,9 +9,9 @@ import (
 	"io"
 	"os/exec"
 
-	"code.google.com/p/go.crypto/ssh"
-	"github.com/spacemonkeygo/monitor"
 	"github.com/spacemonkeygo/spacelog"
+	"golang.org/x/crypto/ssh"
+	"gopkg.in/spacemonkeygo/monitor.v1"
 )
 
 var (

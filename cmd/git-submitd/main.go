@@ -11,12 +11,12 @@ import (
 	"os/exec"
 	"strings"
 
-	"code.google.com/p/go.crypto/ssh"
 	"github.com/jtolds/gitserve/repo"
 	"github.com/spacemonkeygo/flagfile"
-	"github.com/spacemonkeygo/monitor"
 	"github.com/spacemonkeygo/spacelog"
 	"github.com/spacemonkeygo/spacelog/setup"
+	"golang.org/x/crypto/ssh"
+	"gopkg.in/spacemonkeygo/monitor.v1"
 )
 
 var (

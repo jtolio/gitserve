@@ -13,8 +13,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"code.google.com/p/go.crypto/ssh"
 	gs_ssh "github.com/jtolds/gitserve/ssh"
+	"golang.org/x/crypto/ssh"
 )
 
 type RepoHosting struct {
