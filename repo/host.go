@@ -32,6 +32,11 @@ type RepoHosting struct {
 
 	// if empty, *all* users will be allowed.
 	AuthorizedKeys []ssh.PublicKey
+
+	// If set, these commands override the default git-receive-pack and
+	// git-upload-pack
+	GitReceivePack string
+	GitUploadPack  string
 }
 
 func (rh *RepoHosting) cmdHandler(command string,
@@ -40,8 +45,22 @@ func (rh *RepoHosting) cmdHandler(command string,
 	defer mon.Task()(&err)
 
 	parts := strings.Split(command, " ")
-	if len(parts) != 2 || (parts[0] != "git-receive-pack" &&
-		parts[0] != "git-upload-pack") {
+	if len(parts) != 2 {
+		_, err = fmt.Fprintf(stderr, "invalid command: %#v\r\n", command)
+		return 1, err
+	}
+
+	os_cmd := parts[0]
+	switch os_cmd {
+	case "git-receive-pack":
+		if rh.GitReceivePack != "" {
+			os_cmd = rh.GitReceivePack
+		}
+	case "git-upload-pack":
+		if rh.GitUploadPack != "" {
+			os_cmd = rh.GitUploadPack
+		}
+	default:
 		_, err = fmt.Fprintf(stderr, "invalid command: %#v\r\n", command)
 		return 1, err
 	}
@@ -62,7 +81,7 @@ func (rh *RepoHosting) cmdHandler(command string,
 	}
 
 	logger.Noticef("Remote request for repo %#v", repo_path)
-	cmd := exec.Command(parts[0], repo_path)
+	cmd := exec.Command(os_cmd, repo_path)
 	cmd.Stdin = stdin
 	cmd.Stdout = stdout
 	cmd.Stderr = stderr

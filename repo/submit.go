@@ -48,6 +48,11 @@ type RepoSubmissions struct {
 	NewRepoHandler    NewRepoHandler
 	MaxPushSize       int64
 
+	// If set, these commands override the default git-receive-pack and
+	// git-upload-pack
+	GitReceivePack string
+	GitUploadPack  string
+
 	mtx          sync.Mutex
 	repo_lock_cv *sync.Cond
 	keys         map[string]ssh.PublicKey
@@ -160,8 +165,12 @@ func (rs *RepoSubmissions) cmdHandler(command string,
 
 	if parts[0] != "git-receive-pack" {
 		logger.Infof("git fetch: %s %s %s", meta.User(), repo_name, user_repo)
+		os_cmd := "git-upload-pack"
+		if rs.GitUploadPack != "" {
+			os_cmd = rs.GitUploadPack
+		}
 		start_time := monotime.Monotonic()
-		cmd := exec.Command("git-upload-pack", user_repo)
+		cmd := exec.Command(os_cmd, user_repo)
 		cmd.Stdin = stdin
 		cmd.Stdout = stdout
 		cmd.Stderr = stderr
@@ -172,8 +181,12 @@ func (rs *RepoSubmissions) cmdHandler(command string,
 	}
 
 	logger.Infof("git push: %s %s %s", meta.User(), repo_name, user_repo)
+	os_cmd := "git-receive-pack"
+	if rs.GitReceivePack != "" {
+		os_cmd = rs.GitReceivePack
+	}
 	start_time := monotime.Monotonic()
-	cmd := exec.Command("git-receive-pack", user_repo)
+	cmd := exec.Command(os_cmd, user_repo)
 	tags := &tagger{Reader: &maxReader{Reader: stdin, Max: rs.MaxPushSize}}
 	cmd.Stdin = tags
 	cmd.Stdout = stdout
