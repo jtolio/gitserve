@@ -206,7 +206,8 @@ func (rs *RepoSubmissions) cmdHandler(command string,
 		start_time := monotime.Monotonic()
 		exit_status, err = rs.SubmissionHandler(user_repo, stderr, meta, key,
 			repo_name, tags.NewTags)
-		logger.Infof("processed submission: %s %s %s [took %s]", meta.User(), repo_name, user_repo, monotime.Monotonic()-start_time)
+		logger.Infof("processed submission: %s %s %s [took %s]", meta.User(),
+			repo_name, user_repo, monotime.Monotonic()-start_time)
 		return exit_status, err
 	}
 	return 0, nil
@@ -246,7 +247,8 @@ func (rs *RepoSubmissions) sessionEnd(meta ssh.ConnMetadata) {
 	}
 }
 
-func (rs *RepoSubmissions) ListenAndServe(network, address string) (err error) {
+func (rs *RepoSubmissions) ListenAndServe(network, address string) (
+	err error) {
 	defer mon.Task()(&err)
 	config := &ssh.ServerConfig{PublicKeyCallback: rs.publicKeyCallback}
 	config.AddHostKey(rs.PrivateKey)
