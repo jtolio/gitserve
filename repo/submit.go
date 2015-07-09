@@ -4,6 +4,7 @@
 package repo
 
 import (
+	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
@@ -28,7 +29,8 @@ type SubmissionHandler func(
 	exit_status uint32,
 	err error)
 
-type AuthHandler func(meta ssh.ConnMetadata, key ssh.PublicKey) error
+type AuthHandler func(meta ssh.ConnMetadata, key ssh.PublicKey) (
+	unique_user_id *string, err error)
 
 type NewRepoHandler func(
 	repo_path string,
@@ -36,6 +38,11 @@ type NewRepoHandler func(
 	meta ssh.ConnMetadata,
 	key ssh.PublicKey,
 	repo_name string) error
+
+type session struct {
+	key            ssh.PublicKey
+	unique_user_id string
+}
 
 type RepoSubmissions struct {
 	PrivateKey        ssh.Signer
@@ -55,17 +62,17 @@ type RepoSubmissions struct {
 
 	mtx          sync.Mutex
 	repo_lock_cv *sync.Cond
-	keys         map[string]ssh.PublicKey
+	sessions     map[string]*session
 	repo_locks   map[string]bool
 }
 
-func (rs *RepoSubmissions) getKey(session_id []byte) ssh.PublicKey {
+func (rs *RepoSubmissions) getSession(session_id []byte) *session {
 	rs.mtx.Lock()
 	defer rs.mtx.Unlock()
-	if rs.keys == nil {
+	if rs.sessions == nil {
 		return nil
 	}
-	return rs.keys[string(session_id)]
+	return rs.sessions[string(session_id)]
 }
 
 func (rs *RepoSubmissions) lockRepo(repo_id string) {
@@ -90,10 +97,16 @@ func (rs *RepoSubmissions) unlockRepo(repo_id string) {
 	rs.repo_lock_cv.Broadcast()
 }
 
-func (rs *RepoSubmissions) repoId(key ssh.PublicKey, repo_name string) string {
-	full_keyhash := sha256.Sum256([]byte(string(ssh.MarshalAuthorizedKey(key)) +
-		" " + repo_name))
-	return hex.EncodeToString(full_keyhash[:])
+func userIdFromKey(key ssh.PublicKey) string {
+	keyhash := sha256.Sum256(ssh.MarshalAuthorizedKey(key))
+	return hex.EncodeToString(keyhash[:])
+}
+
+func (rs *RepoSubmissions) repoId(unique_user_id, repo_name string) string {
+	mac := hmac.New(sha256.New, []byte(unique_user_id))
+	mac.Write([]byte(repo_name))
+	id := mac.Sum(nil)
+	return hex.EncodeToString(id)
 }
 
 func (rs *RepoSubmissions) getUserRepo(repo_id string, output io.Writer,
@@ -134,8 +147,8 @@ func (rs *RepoSubmissions) cmdHandler(command string,
 	stdin io.Reader, stdout, stderr io.Writer,
 	meta ssh.ConnMetadata) (exit_status uint32, err error) {
 	defer mon.Task()(&err)
-	key := rs.getKey(meta.SessionID())
-	if key == nil {
+	session := rs.getSession(meta.SessionID())
+	if session == nil {
 		panic("unauthorized?")
 	}
 	parts := strings.Split(command, " ")
@@ -147,9 +160,10 @@ func (rs *RepoSubmissions) cmdHandler(command string,
 
 	repo_name := strings.Trim(parts[1], "'")
 
-	repo_id := rs.repoId(key, repo_name)
+	repo_id := rs.repoId(session.unique_user_id, repo_name)
 	rs.lockRepo(repo_id)
-	user_repo, err := rs.getUserRepo(repo_id, stderr, meta, key, repo_name)
+	user_repo, err := rs.getUserRepo(repo_id, stderr, meta, session.key,
+		repo_name)
 	if err != nil {
 		rs.unlockRepo(repo_id)
 		return 1, err
@@ -204,8 +218,8 @@ func (rs *RepoSubmissions) cmdHandler(command string,
 
 	if rs.SubmissionHandler != nil {
 		start_time := monotime.Monotonic()
-		exit_status, err = rs.SubmissionHandler(user_repo, stderr, meta, key,
-			repo_name, tags.NewTags)
+		exit_status, err = rs.SubmissionHandler(user_repo, stderr, meta,
+			session.key, repo_name, tags.NewTags)
 		logger.Infof("processed submission: %s %s %s [took %s]", meta.User(),
 			repo_name, user_repo, monotime.Monotonic()-start_time)
 		return exit_status, err
@@ -217,24 +231,29 @@ func (rs *RepoSubmissions) publicKeyCallback(
 	meta ssh.ConnMetadata, key ssh.PublicKey) (rv *ssh.Permissions, err error) {
 	defer mon.Task()(&err)
 
+	var unique_user_id *string
 	if rs.AuthHandler != nil {
-		err = rs.AuthHandler(meta, key)
+		unique_user_id, err = rs.AuthHandler(meta, key)
 		if err != nil {
 			return nil, err
 		}
 	}
+	if unique_user_id == nil {
+		id := userIdFromKey(key)
+		unique_user_id = &id
+	}
 
 	rs.mtx.Lock()
 	defer rs.mtx.Unlock()
-	if rs.keys == nil {
-		rs.keys = make(map[string]ssh.PublicKey)
+	if rs.sessions == nil {
+		rs.sessions = make(map[string]*session)
 	}
 
 	session_id := string(meta.SessionID())
-	if _, exists := rs.keys[session_id]; exists {
+	if _, exists := rs.sessions[session_id]; exists {
 		panic("session should be unique")
 	}
-	rs.keys[session_id] = key
+	rs.sessions[session_id] = &session{key: key, unique_user_id: *unique_user_id}
 	return nil, nil
 }
 
@@ -242,8 +261,8 @@ func (rs *RepoSubmissions) sessionEnd(meta ssh.ConnMetadata) {
 	defer mon.Task()(nil)
 	rs.mtx.Lock()
 	defer rs.mtx.Unlock()
-	if rs.keys != nil {
-		delete(rs.keys, string(meta.SessionID()))
+	if rs.sessions != nil {
+		delete(rs.sessions, string(meta.SessionID()))
 	}
 }
 

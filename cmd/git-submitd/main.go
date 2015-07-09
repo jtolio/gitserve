@@ -90,12 +90,13 @@ func NewRepoHandler(repo_path string, output io.Writer, meta ssh.ConnMetadata,
 	return cmd.Run()
 }
 
-func AuthHandler(meta ssh.ConnMetadata, key ssh.PublicKey) (err error) {
+func AuthHandler(meta ssh.ConnMetadata, key ssh.PublicKey) (user_id *string,
+	err error) {
 	defer mon.Task()(&err)
 	if *auth == "" {
-		return nil
+		return nil, nil
 	}
-	return exec.Command(*auth,
+	return nil, exec.Command(*auth,
 		"--user", meta.User(),
 		"--remote", meta.RemoteAddr().String(),
 		"--key", strings.TrimSpace(string(ssh.MarshalAuthorizedKey(key)))).Run()
