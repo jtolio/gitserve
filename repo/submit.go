@@ -11,7 +11,6 @@ import (
 	"io"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 	"sync"
 
@@ -56,7 +55,7 @@ type RepoSubmissions struct {
 	PrivateKey           ssh.Signer
 	ShellError           string
 	MOTD                 string
-	StoragePath          string
+	StoragePath          func(user_id, repo_name string) string
 	Clean                bool
 	PresubmissionHandler PresubmissionHandler
 	SubmissionHandler    SubmissionHandler
@@ -111,17 +110,19 @@ func userIdFromKey(key ssh.PublicKey) string {
 	return hex.EncodeToString(keyhash[:])
 }
 
-func (rs *RepoSubmissions) repoId(unique_user_id, repo_name string) string {
+func (rs *RepoSubmissions) repoPath(unique_user_id, repo_name string) string {
+	if rs.StoragePath != nil {
+		return rs.StoragePath(unique_user_id, repo_name)
+	}
 	mac := hmac.New(sha256.New, []byte(unique_user_id))
 	mac.Write([]byte(repo_name))
 	id := mac.Sum(nil)
-	return hex.EncodeToString(id)
+	return fmt.Sprintf("/tmp/submissions/%x", id)
 }
 
-func (rs *RepoSubmissions) getUserRepo(repo_id string, output io.Writer,
+func (rs *RepoSubmissions) getUserRepo(user_repo string, output io.Writer,
 	meta ssh.ConnMetadata, key ssh.PublicKey, repo_name string) (
 	path string, err error) {
-	user_repo := filepath.Join(rs.StoragePath, repo_id)
 	_, err = os.Stat(user_repo)
 	if err == nil {
 		return user_repo, nil
@@ -169,21 +170,21 @@ func (rs *RepoSubmissions) cmdHandler(command string,
 
 	repo_name := strings.Trim(parts[1], "'")
 
-	repo_id := rs.repoId(session.unique_user_id, repo_name)
-	rs.lockRepo(repo_id)
-	user_repo, err := rs.getUserRepo(repo_id, stderr, meta, session.key,
+	repo_path := rs.repoPath(session.unique_user_id, repo_name)
+	rs.lockRepo(repo_path)
+	user_repo, err := rs.getUserRepo(repo_path, stderr, meta, session.key,
 		repo_name)
 	if err != nil {
-		rs.unlockRepo(repo_id)
+		rs.unlockRepo(repo_path)
 		return 1, err
 	}
 	if rs.Clean {
 		defer func() {
 			os.RemoveAll(user_repo)
-			rs.unlockRepo(repo_id)
+			rs.unlockRepo(repo_path)
 		}()
 	} else {
-		rs.unlockRepo(repo_id)
+		rs.unlockRepo(repo_path)
 	}
 
 	if parts[0] != "git-receive-pack" {
