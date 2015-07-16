@@ -29,6 +29,14 @@ type SubmissionHandler func(
 	exit_status uint32,
 	err error)
 
+type PresubmissionHandler func(
+	repo_path string,
+	output io.Writer,
+	meta ssh.ConnMetadata,
+	key ssh.PublicKey,
+	repo_name string) (
+	err error)
+
 type AuthHandler func(meta ssh.ConnMetadata, key ssh.PublicKey) (
 	unique_user_id *string, err error)
 
@@ -45,15 +53,16 @@ type session struct {
 }
 
 type RepoSubmissions struct {
-	PrivateKey        ssh.Signer
-	ShellError        string
-	MOTD              string
-	StoragePath       string
-	Clean             bool
-	SubmissionHandler SubmissionHandler
-	AuthHandler       AuthHandler
-	NewRepoHandler    NewRepoHandler
-	MaxPushSize       int64
+	PrivateKey           ssh.Signer
+	ShellError           string
+	MOTD                 string
+	StoragePath          string
+	Clean                bool
+	PresubmissionHandler PresubmissionHandler
+	SubmissionHandler    SubmissionHandler
+	AuthHandler          AuthHandler
+	NewRepoHandler       NewRepoHandler
+	MaxPushSize          int64
 
 	// If set, these commands override the default git-receive-pack and
 	// git-upload-pack
@@ -192,6 +201,14 @@ func (rs *RepoSubmissions) cmdHandler(command string,
 		logger.Noticef("git fetch: %s %s %s [took %s]", meta.User(), repo_name,
 			user_repo, monotime.Monotonic()-start_time)
 		return exit_status, err
+	}
+
+	if rs.PresubmissionHandler != nil {
+		err := rs.PresubmissionHandler(user_repo, stderr, meta, session.key,
+			repo_name)
+		if err != nil {
+			return 1, err
+		}
 	}
 
 	logger.Infof("git push: %s %s %s", meta.User(), repo_name, user_repo)
