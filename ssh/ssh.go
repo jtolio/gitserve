@@ -199,7 +199,10 @@ func (r *RestrictedServer) Serve(listener net.Listener) (err error) {
 		}
 		delay = 0
 		go func() {
-			logger.Errore(r.handleConn(conn))
+			err := r.handleConn(conn)
+			if err != nil && err != io.EOF {
+				logger.Errore(err)
+			}
 		}()
 	}
 }
