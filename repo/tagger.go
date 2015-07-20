@@ -64,9 +64,13 @@ func (t *tagger) Read(p []byte) (n int, err error) {
 			return 0, err
 		}
 
+		var fields []string
 		parseable_part := string(line)
-		fields := strings.Fields(
-			parseable_part[:strings.Index(parseable_part, "\x00")])
+		null_index := strings.Index(parseable_part, "\x00")
+		if null_index >= 0 {
+			fields = strings.Fields(
+				parseable_part[:null_index])
+		}
 		if len(fields) != 3 {
 			t.Err = fmt.Errorf(
 				"protocol error: unexpected amount of fields in pkt-line: %#v",
