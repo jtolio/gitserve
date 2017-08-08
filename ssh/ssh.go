@@ -12,12 +12,12 @@ import (
 
 	"github.com/spacemonkeygo/spacelog"
 	"golang.org/x/crypto/ssh"
-	"gopkg.in/spacemonkeygo/monitor.v1"
+	"gopkg.in/spacemonkeygo/monkit.v2"
 )
 
 var (
 	logger = spacelog.GetLogger()
-	mon    = monitor.GetMonitors()
+	mon    = monkit.Package()
 )
 
 type CommandHandler func(
@@ -36,7 +36,7 @@ type RestrictedServer struct {
 }
 
 func writeExitStatus(ch ssh.Channel, status uint32) (err error) {
-	defer mon.Task()(&err)
+	defer mon.Task()(nil)(&err)
 	var packed [4]byte
 	binary.BigEndian.PutUint32(packed[:], status)
 	_, err = ch.SendRequest("exit-status", false, packed[:])
@@ -45,7 +45,7 @@ func writeExitStatus(ch ssh.Channel, status uint32) (err error) {
 
 func (r *RestrictedServer) handleExec(ch ssh.Channel, command string,
 	meta ssh.ConnMetadata) (exit_status uint32, err error) {
-	defer mon.Task()(&err)
+	defer mon.Task()(nil)(&err)
 	if r.Handler != nil {
 		return r.Handler(command, ch, ch, ch.Stderr(), meta)
 	}
@@ -56,7 +56,7 @@ func (r *RestrictedServer) handleExec(ch ssh.Channel, command string,
 
 func (r *RestrictedServer) handleChan(ch ssh.Channel,
 	reqs <-chan *ssh.Request, meta ssh.ConnMetadata) (err error) {
-	defer mon.Task()(&err)
+	defer mon.Task()(nil)(&err)
 	defer ch.Close()
 	exec_happened := false
 	pty_requested := false
@@ -146,7 +146,7 @@ func (r *RestrictedServer) handleChan(ch ssh.Channel,
 }
 
 func (r *RestrictedServer) handleConn(conn net.Conn) (err error) {
-	defer mon.Task()(&err)
+	defer mon.Task()(nil)(&err)
 	defer conn.Close()
 	sc, new_chans, reqs, err := ssh.NewServerConn(conn, r.SSHConfig)
 	if err != nil {
@@ -175,7 +175,7 @@ func (r *RestrictedServer) handleConn(conn net.Conn) (err error) {
 }
 
 func (r *RestrictedServer) Serve(listener net.Listener) (err error) {
-	defer mon.Task()(&err)
+	defer mon.Task()(nil)(&err)
 	defer listener.Close()
 	logger.Noticef("listening on %s", listener.Addr())
 	var delay time.Duration
@@ -208,7 +208,7 @@ func (r *RestrictedServer) Serve(listener net.Listener) (err error) {
 }
 
 func (r *RestrictedServer) ListenAndServe(network, address string) (err error) {
-	defer mon.Task()(&err)
+	defer mon.Task()(nil)(&err)
 	listener, err := net.Listen(network, address)
 	if err != nil {
 		return err

@@ -156,7 +156,7 @@ func (rs *RepoSubmissions) getUserRepo(user_repo string, output io.Writer,
 func (rs *RepoSubmissions) cmdHandler(command string,
 	stdin io.Reader, stdout, stderr io.Writer,
 	meta ssh.ConnMetadata) (exit_status uint32, err error) {
-	defer mon.Task()(&err)
+	defer mon.Task()(nil)(&err)
 	session := rs.getSession(meta.SessionID())
 	if session == nil {
 		panic("unauthorized?")
@@ -247,7 +247,7 @@ func (rs *RepoSubmissions) cmdHandler(command string,
 
 func (rs *RepoSubmissions) publicKeyCallback(
 	meta ssh.ConnMetadata, key ssh.PublicKey) (rv *ssh.Permissions, err error) {
-	defer mon.Task()(&err)
+	defer mon.Task()(nil)(&err)
 
 	var unique_user_id *string
 	if rs.AuthHandler != nil {
@@ -276,7 +276,7 @@ func (rs *RepoSubmissions) publicKeyCallback(
 }
 
 func (rs *RepoSubmissions) sessionEnd(meta ssh.ConnMetadata) {
-	defer mon.Task()(nil)
+	defer mon.Task()(nil)(nil)
 	rs.mtx.Lock()
 	defer rs.mtx.Unlock()
 	if rs.sessions != nil {
@@ -286,7 +286,7 @@ func (rs *RepoSubmissions) sessionEnd(meta ssh.ConnMetadata) {
 
 func (rs *RepoSubmissions) ListenAndServe(network, address string) (
 	err error) {
-	defer mon.Task()(&err)
+	defer mon.Task()(nil)(&err)
 	config := &ssh.ServerConfig{PublicKeyCallback: rs.publicKeyCallback}
 	config.AddHostKey(rs.PrivateKey)
 	return (&gs_ssh.RestrictedServer{

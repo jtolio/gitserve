@@ -42,7 +42,7 @@ type RepoHosting struct {
 func (rh *RepoHosting) cmdHandler(command string,
 	stdin io.Reader, stdout, stderr io.Writer,
 	meta ssh.ConnMetadata) (exit_status uint32, err error) {
-	defer mon.Task()(&err)
+	defer mon.Task()(nil)(&err)
 
 	parts := strings.Split(command, " ")
 	if len(parts) != 2 {
@@ -90,7 +90,7 @@ func (rh *RepoHosting) cmdHandler(command string,
 
 func (rh *RepoHosting) publicKeyCallback(
 	meta ssh.ConnMetadata, key ssh.PublicKey) (rv *ssh.Permissions, err error) {
-	defer mon.Task()(&err)
+	defer mon.Task()(nil)(&err)
 
 	if len(rh.AuthorizedKeys) == 0 {
 		logger.Noticef("All users authorized")
@@ -112,7 +112,7 @@ func (rh *RepoHosting) publicKeyCallback(
 }
 
 func (rh *RepoHosting) ListenAndServe(network, address string) (err error) {
-	defer mon.Task()(&err)
+	defer mon.Task()(nil)(&err)
 	config := &ssh.ServerConfig{PublicKeyCallback: rh.publicKeyCallback}
 
 	if rh.PrivateKey == nil {

@@ -16,7 +16,9 @@ import (
 	"github.com/spacemonkeygo/spacelog"
 	"github.com/spacemonkeygo/spacelog/setup"
 	"golang.org/x/crypto/ssh"
-	"gopkg.in/spacemonkeygo/monitor.v1"
+	"gopkg.in/spacemonkeygo/monkit.v2"
+	"gopkg.in/spacemonkeygo/monkit.v2/environment"
+	"gopkg.in/spacemonkeygo/monkit.v2/present"
 )
 
 var (
@@ -49,13 +51,13 @@ var (
 		"the maximum push size in bytes")
 
 	logger = spacelog.GetLogger()
-	mon    = monitor.GetMonitors()
+	mon    = monkit.Package()
 )
 
 func SubmissionHandler(repo_path string, output io.Writer,
 	meta ssh.ConnMetadata, key ssh.PublicKey, name string,
 	tags map[repo.Ref][]repo.Tag) (exit_status uint32, err error) {
-	defer mon.Task()(&err)
+	defer mon.Task()(nil)(&err)
 
 	var tag_names []string
 	for _, ref_tags := range tags {
@@ -78,7 +80,7 @@ func SubmissionHandler(repo_path string, output io.Writer,
 
 func NewRepoHandler(repo_path string, output io.Writer, meta ssh.ConnMetadata,
 	key ssh.PublicKey, name string) (err error) {
-	defer mon.Task()(&err)
+	defer mon.Task()(nil)(&err)
 	cmd := exec.Command(*newRepo,
 		"--repo", repo_path,
 		"--user", meta.User(),
@@ -92,7 +94,7 @@ func NewRepoHandler(repo_path string, output io.Writer, meta ssh.ConnMetadata,
 
 func AuthHandler(meta ssh.ConnMetadata, key ssh.PublicKey) (user_id *string,
 	err error) {
-	defer mon.Task()(&err)
+	defer mon.Task()(nil)(&err)
 	if *auth == "" {
 		return nil, nil
 	}
@@ -105,8 +107,8 @@ func AuthHandler(meta ssh.ConnMetadata, key ssh.PublicKey) (user_id *string,
 func main() {
 	flagfile.Load()
 	setup.MustSetup("git-submitd")
-	monitor.RegisterEnvironment()
-	go http.ListenAndServe(*debugAddr, monitor.DefaultStore)
+	environment.Register(monkit.Default)
+	go http.ListenAndServe(*debugAddr, present.HTTP(monkit.Default))
 
 	private_bytes, err := ioutil.ReadFile(*privateKey)
 	if err != nil {
@@ -126,7 +128,7 @@ func main() {
 		PrivateKey:        private_key,
 		ShellError:        *shellError + "\r\n",
 		MOTD:              *motd + "\r\n",
-		StoragePath:       *storage,
+		StoragePath:       func(string, string) string { return *storage },
 		Clean:             *clean,
 		SubmissionHandler: SubmissionHandler,
 		AuthHandler:       AuthHandler,

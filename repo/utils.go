@@ -11,12 +11,12 @@ import (
 
 	"github.com/spacemonkeygo/spacelog"
 	"golang.org/x/crypto/ssh"
-	"gopkg.in/spacemonkeygo/monitor.v1"
+	"gopkg.in/spacemonkeygo/monkit.v2"
 )
 
 var (
 	logger = spacelog.GetLogger()
-	mon    = monitor.GetMonitors()
+	mon    = monkit.Package()
 )
 
 type maxReader struct {

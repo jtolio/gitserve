@@ -13,7 +13,9 @@ import (
 	"github.com/spacemonkeygo/spacelog"
 	"github.com/spacemonkeygo/spacelog/setup"
 	"golang.org/x/crypto/ssh"
-	"gopkg.in/spacemonkeygo/monitor.v1"
+	"gopkg.in/spacemonkeygo/monkit.v2"
+	"gopkg.in/spacemonkeygo/monkit.v2/environment"
+	"gopkg.in/spacemonkeygo/monkit.v2/present"
 )
 
 var (
@@ -38,14 +40,14 @@ var (
 		"address to listen on for debug http endpoints")
 
 	logger = spacelog.GetLogger()
-	mon    = monitor.GetMonitors()
+	mon    = monkit.Package()
 )
 
 func main() {
 	flagfile.Load()
 	setup.MustSetup("git-hostd")
-	monitor.RegisterEnvironment()
-	go http.ListenAndServe(*debugAddr, monitor.DefaultStore)
+	environment.Register(monkit.Default)
+	go http.ListenAndServe(*debugAddr, present.HTTP(monkit.Default))
 
 	rh := &repo.RepoHosting{
 		ShellError: *shellError + "\r\n",
